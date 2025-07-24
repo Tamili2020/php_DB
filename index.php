@@ -13,36 +13,33 @@
 <body>
     <h1>Azure SQL Employee Data</h1>
     <?php
-    // Azure SQL connection
-// PHP Data Objects(PDO) Sample Code:
-try {
-    $conn = new PDO("sqlsrv:server = tcp:mydemovm.database.windows.net,1433; Database = mydemodb", "azureadmin", "{Welcome@123456}");
-    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-}
-catch (PDOException $e) {
-    print("Error connecting to SQL Server.");
-    die(print_r($e));
-}
-
-// SQL Server Extension Sample Code:
-$connectionInfo = array("UID" => "azureadmin", "pwd" => "{Welcome@123456}", "Database" => "mydemodb", "LoginTimeout" => 30, "Encrypt" => 1, "TrustServerCertificate" => 0);
-$serverName = "tcp:mydemovm.database.windows.net,1433";
-$conn = sqlsrv_connect($serverName, $connectionInfo);
+    // Azure SQL connection using sqlsrv
+    $serverName = "tcp:mydemovm.database.windows.net,1433";
+    $connectionOptions = array(
+        "Database" => "mydemodb",
+        "Uid" => "azureadmin",
+        "PWD" => "Welcome@123456",  // No {} here
+        "Encrypt" => 1,
+        "TrustServerCertificate" => 0,
+        "LoginTimeout" => 30
     );
 
+    // Connect
     $conn = sqlsrv_connect($serverName, $connectionOptions);
 
     if ($conn === false) {
-        die("<p style='color:red;'>Connection failed: " . print_r(sqlsrv_errors(), true) . "</p>");
+        die("<p style='color:red;'>❌ Connection failed: " . print_r(sqlsrv_errors(), true) . "</p>");
     }
 
-    $sql = "SELECT EmployeeID, FirstName, LastName, Department FROM Employees"; // Adjust table/column names
+    // Query data
+    $sql = "SELECT EmployeeID, FirstName, LastName, Department FROM dbo.Employees"; // Use dbo. schema
     $stmt = sqlsrv_query($conn, $sql);
 
     if ($stmt === false) {
-        die("<p style='color:red;'>Query failed: " . print_r(sqlsrv_errors(), true) . "</p>");
+        die("<p style='color:red;'>❌ Query failed: " . print_r(sqlsrv_errors(), true) . "</p>");
     }
 
+    // Display table
     echo "<table>";
     echo "<tr><th>ID</th><th>First Name</th><th>Last Name</th><th>Department</th></tr>";
     while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
