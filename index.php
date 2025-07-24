@@ -1,45 +1,55 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Azure SQL DB Test</title>
+    <title>Employee Data from Azure SQL</title>
+    <style>
+        body { font-family: Arial; background-color: #f2f9ff; padding: 30px; text-align: center; }
+        table { border-collapse: collapse; width: 80%; margin: auto; background: white; }
+        th, td { border: 1px solid #ccc; padding: 12px; text-align: left; }
+        th { background-color: #0078D4; color: white; }
+        h1 { color: #0078D4; }
+    </style>
 </head>
-<body style="background-color: #e6f2ff; font-family: Arial, sans-serif;">
-    <center>
-        <h1>Azure SQL Connection Test</h1>
-        <?php
-        $serverName = "your-server.database.windows.net";
-        $connectionOptions = array(
-            "Database" => "your-database",
-            "Uid" => "your-username",
-            "PWD" => "your-password",
-            "Encrypt" => 1,
-            "TrustServerCertificate" => 0,
-            "LoginTimeout" => 30
-        );
+<body>
+    <h1>Azure SQL Employee Data</h1>
+    <?php
+    // Azure SQL connection
+    $serverName = "mydemovm.database.windows.net";
+    $connectionOptions = array(
+        "Database" => "mydemodb",
+        "Uid" => "azureadmin",
+        "PWD" => "Welcome@123456",
+        "Encrypt" => true,
+        "TrustServerCertificate" => false
+    );
 
-        // Establishes the connection
-        $conn = sqlsrv_connect($serverName, $connectionOptions);
+    $conn = sqlsrv_connect($serverName, $connectionOptions);
 
-        if ($conn) {
-            echo "<p style='color: green;'>✅ Connection successful to Azure SQL Database!</p>";
-            
-            // Optional: run a sample query
-            $tsql = "SELECT name FROM sys.databases";
-            $stmt = sqlsrv_query($conn, $tsql);
+    if ($conn === false) {
+        die("<p style='color:red;'>Connection failed: " . print_r(sqlsrv_errors(), true) . "</p>");
+    }
 
-            echo "<h3>Available Databases:</h3><ul>";
-            while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-                echo "<li>" . $row['name'] . "</li>";
-            }
-            echo "</ul>";
+    $sql = "SELECT EmployeeID, FirstName, LastName, Department FROM Employees"; // Adjust table/column names
+    $stmt = sqlsrv_query($conn, $sql);
 
-            sqlsrv_free_stmt($stmt);
-            sqlsrv_close($conn);
-        } else {
-            echo "<p style='color: red;'>❌ Connection failed.</p>";
-            die(print_r(sqlsrv_errors(), true));
-        }
-        ?>
-    </center>
+    if ($stmt === false) {
+        die("<p style='color:red;'>Query failed: " . print_r(sqlsrv_errors(), true) . "</p>");
+    }
+
+    echo "<table>";
+    echo "<tr><th>ID</th><th>First Name</th><th>Last Name</th><th>Department</th></tr>";
+    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        echo "<tr>
+                <td>{$row['EmployeeID']}</td>
+                <td>{$row['FirstName']}</td>
+                <td>{$row['LastName']}</td>
+                <td>{$row['Department']}</td>
+              </tr>";
+    }
+    echo "</table>";
+
+    sqlsrv_free_stmt($stmt);
+    sqlsrv_close($conn);
+    ?>
 </body>
 </html>
