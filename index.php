@@ -18,10 +18,6 @@
             cursor: pointer;
             font-size: 16px;
         }
-        .form-section, .list-section {
-            display: none;
-            margin-top: 30px;
-        }
         input {
             padding: 10px;
             margin: 10px;
@@ -46,15 +42,15 @@
 </head>
 <body>
     <h1>Azure SQL Employee Portal</h1>
-    
-    <!-- Buttons -->
+
+    <!-- Buttons to trigger actions -->
     <form method="post">
-        <button class="btn" name="action" value="add">Add Employee</button>
-        <button class="btn" name="action" value="list">Employee List</button>
+        <button class="btn" name="show_form" value="1">Add Employee</button>
+        <button class="btn" name="show_list" value="1">Employee List</button>
     </form>
 
 <?php
-// Azure SQL DB connection
+// Database connection
 $serverName = "tcp:mydemovm.database.windows.net,1433";
 $connectionOptions = array(
     "Database" => "mydemodb",
@@ -70,22 +66,7 @@ if (!$conn) {
     die("<p style='color:red;'>❌ Connection failed: " . print_r(sqlsrv_errors(), true) . "</p>");
 }
 
-// Show form if 'Add Employee' is clicked
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['action'] == 'add') {
-    echo '
-    <div class="form-section">
-        <h2>Add New Employee</h2>
-        <form method="post">
-            <input type="text" name="first_name" placeholder="First Name" required><br>
-            <input type="text" name="last_name" placeholder="Last Name" required><br>
-            <input type="text" name="department" placeholder="Department" required><br>
-            <input class="btn" type="submit" name="submit" value="Save">
-        </form>
-    </div>
-    ';
-}
-
-// Insert employee
+// 1. Insert new employee if form was submitted
 if (isset($_POST['submit'])) {
     $first = $_POST['first_name'];
     $last = $_POST['last_name'];
@@ -102,13 +83,25 @@ if (isset($_POST['submit'])) {
     }
 }
 
-// Show employee list if clicked
-if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['action'] == 'list' || isset($_POST['submit'])) {
+// 2. Show the employee form
+if (isset($_POST['show_form'])) {
+    echo '
+    <form method="post">
+        <h2>Add New Employee</h2>
+        <input type="text" name="first_name" placeholder="First Name" required><br>
+        <input type="text" name="last_name" placeholder="Last Name" required><br>
+        <input type="text" name="department" placeholder="Department" required><br>
+        <input class="btn" type="submit" name="submit" value="Save">
+    </form>
+    ';
+}
+
+// 3. Show the employee list (after insert or when requested)
+if (isset($_POST['show_list']) || isset($_POST['submit'])) {
     $sql = "SELECT EmployeeID, FirstName, LastName, Department FROM Employees";
     $stmt = sqlsrv_query($conn, $sql);
 
     if ($stmt !== false) {
-        echo '<div class="list-section">';
         echo "<h2>Employee List</h2>";
         echo "<table>";
         echo "<tr><th>ID</th><th>First Name</th><th>Last Name</th><th>Department</th></tr>";
@@ -120,8 +113,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['action'] == 'list' || isset(
                     <td>{$row['Department']}</td>
                   </tr>";
         }
-        echo "</table></div>";
-        sqlsrv_free_stmt($stmt);
+        echo "</table>";
     } else {
         echo "<p style='color:red;'>❌ Query failed: " . print_r(sqlsrv_errors(), true) . "</p>";
     }
