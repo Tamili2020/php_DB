@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Employee Form - Azure SQL</title>
+    <title>Azure SQL Employee Portal</title>
     <style>
         body {
             font-family: Arial;
@@ -9,7 +9,20 @@
             padding: 30px;
             text-align: center;
         }
-        input, select {
+        .btn {
+            padding: 12px 25px;
+            background-color: #0078D4;
+            color: white;
+            border: none;
+            margin: 10px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .form-section, .list-section {
+            display: none;
+            margin-top: 30px;
+        }
+        input {
             padding: 10px;
             margin: 10px;
             width: 250px;
@@ -17,7 +30,7 @@
         table {
             border-collapse: collapse;
             width: 80%;
-            margin: 30px auto;
+            margin: 20px auto;
             background: white;
         }
         th, td {
@@ -32,16 +45,16 @@
     </style>
 </head>
 <body>
-    <h1>Add Employee</h1>
+    <h1>Azure SQL Employee Portal</h1>
+    
+    <!-- Buttons -->
     <form method="post">
-        <input type="text" name="first_name" placeholder="First Name" required><br>
-        <input type="text" name="last_name" placeholder="Last Name" required><br>
-        <input type="text" name="department" placeholder="Department" required><br>
-        <input type="submit" name="submit" value="Add Employee">
+        <button class="btn" name="action" value="add">Add Employee</button>
+        <button class="btn" name="action" value="list">Employee List</button>
     </form>
 
 <?php
-// Azure SQL DB connection info
+// Azure SQL DB connection
 $serverName = "tcp:mydemovm.database.windows.net,1433";
 $connectionOptions = array(
     "Database" => "mydemodb",
@@ -57,7 +70,22 @@ if (!$conn) {
     die("<p style='color:red;'>❌ Connection failed: " . print_r(sqlsrv_errors(), true) . "</p>");
 }
 
-// Insert data if form is submitted
+// Show form if 'Add Employee' is clicked
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['action'] == 'add') {
+    echo '
+    <div class="form-section">
+        <h2>Add New Employee</h2>
+        <form method="post">
+            <input type="text" name="first_name" placeholder="First Name" required><br>
+            <input type="text" name="last_name" placeholder="Last Name" required><br>
+            <input type="text" name="department" placeholder="Department" required><br>
+            <input class="btn" type="submit" name="submit" value="Save">
+        </form>
+    </div>
+    ';
+}
+
+// Insert employee
 if (isset($_POST['submit'])) {
     $first = $_POST['first_name'];
     $last = $_POST['last_name'];
@@ -74,24 +102,29 @@ if (isset($_POST['submit'])) {
     }
 }
 
-// Show all employees
-$sql = "SELECT EmployeeID, FirstName, LastName, Department FROM Employees";
-$stmt = sqlsrv_query($conn, $sql);
+// Show employee list if clicked
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && $_POST['action'] == 'list' || isset($_POST['submit'])) {
+    $sql = "SELECT EmployeeID, FirstName, LastName, Department FROM Employees";
+    $stmt = sqlsrv_query($conn, $sql);
 
-if ($stmt !== false) {
-    echo "<h2>Employee List</h2>";
-    echo "<table>";
-    echo "<tr><th>ID</th><th>First Name</th><th>Last Name</th><th>Department</th></tr>";
-    while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
-        echo "<tr>
-                <td>{$row['EmployeeID']}</td>
-                <td>{$row['FirstName']}</td>
-                <td>{$row['LastName']}</td>
-                <td>{$row['Department']}</td>
-              </tr>";
+    if ($stmt !== false) {
+        echo '<div class="list-section">';
+        echo "<h2>Employee List</h2>";
+        echo "<table>";
+        echo "<tr><th>ID</th><th>First Name</th><th>Last Name</th><th>Department</th></tr>";
+        while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+            echo "<tr>
+                    <td>{$row['EmployeeID']}</td>
+                    <td>{$row['FirstName']}</td>
+                    <td>{$row['LastName']}</td>
+                    <td>{$row['Department']}</td>
+                  </tr>";
+        }
+        echo "</table></div>";
+        sqlsrv_free_stmt($stmt);
+    } else {
+        echo "<p style='color:red;'>❌ Query failed: " . print_r(sqlsrv_errors(), true) . "</p>";
     }
-    echo "</table>";
-    sqlsrv_free_stmt($stmt);
 }
 
 sqlsrv_close($conn);
